@@ -7,11 +7,23 @@ Create a new fragment.
 
 from __future__ import annotations
 
+import base64
 import os
+import time
 
 import click
 
 from ._settings import config_option_help, load_config_from_options
+
+
+def b32hexencode(data: bytes) -> bytes:
+    try:
+        return base64.b32hexencode(data)
+    except AttributeError:
+        # Python <3.10 fallback.
+        base64.b32encode(data).maketrans(
+            b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", b"0123456789ABCDEFGHIJKLMNOPQRSTUV="
+        )
 
 
 @click.command(name="create")
@@ -83,13 +95,17 @@ def __main(
 
     file_dir, file_basename = os.path.split(filename)
     if config.orphan_prefix and file_basename.startswith(f"{config.orphan_prefix}."):
-        # Append a random hex string to the orphan news fragment base name.
+        # Append a lower case base32 string (based on the current time down to the
+        # millisecond) to the orphan news fragment base name.
+        hexdate = (
+            b32hexencode(int(time.time() * 1000).to_bytes(10, "big"))
+            .decode()
+            .lstrip("0")
+            .lower()
+        )
         filename = os.path.join(
             file_dir,
-            (
-                f"{config.orphan_prefix}{os.urandom(4).hex()}"
-                f"{file_basename[len(config.orphan_prefix):]}"
-            ),
+            f"{config.orphan_prefix}{hexdate}{file_basename[len(config.orphan_prefix):]}",
         )
     if len(filename.split(".")) < 2 or (
         filename.split(".")[-1] not in config.types
@@ -151,4 +167,5 @@ def _get_news_content_from_user(message: str) -> str | None:
 
 
 if __name__ == "__main__":  # pragma: no cover
+    _main()
     _main()

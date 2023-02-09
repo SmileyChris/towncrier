@@ -2,7 +2,6 @@
 # See LICENSE for details.
 
 import os
-import string
 
 from pathlib import Path
 from textwrap import dedent
@@ -192,14 +191,14 @@ class TestCli(TestCase):
 
         self.assertEqual(change1.suffix, ".feature")
         self.assertTrue(change1.stem.startswith("+"))
-        # Length should be '+' character and 8 random hex characters.
-        self.assertEqual(len(change1.stem), 9)
+        # Length should be '+' character and 9 base32 characters.
+        self.assertEqual(len(change1.stem), 10)
 
         self.assertEqual(change2.suffix, ".feature")
         self.assertTrue(change2.stem.startswith("+"))
         self.assertEqual(change2.parent, sub_frag_path)
-        # Length should be '+' character and 8 random hex characters.
-        self.assertEqual(len(change2.stem), 9)
+        # Length should be '+' character and 9 base32 characters.
+        self.assertEqual(len(change2.stem), 10)
 
     @with_isolated_runner
     def test_create_orphan_fragment_custom_prefix(self, runner: CliRunner):
@@ -217,7 +216,9 @@ class TestCli(TestCase):
         self.assertEqual(len(fragments), 1)
         change = fragments[0]
         self.assertTrue(change.stem.startswith("$$$"))
-        # Length should be '$$$' characters and 8 random hex characters.
-        self.assertEqual(len(change.stem), 11)
-        # Check the remainder are all hex characters.
-        self.assertTrue(all(c in string.hexdigits for c in change.stem[3:]))
+        # Length should be '$$$' characters and 9 base32 characters.
+        self.assertEqual(len(change.stem), 12)
+        # Check the remainder are all lowercase base32 characters.
+        self.assertTrue(
+            all(c in "0123456789abcdefghijklmnopqrstuv" for c in change.stem[3:])
+        )
